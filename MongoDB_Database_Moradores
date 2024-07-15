@@ -177,4 +177,3 @@ db.Moradores.find({MoradorGenero: {$regex: 'MASCulino', $options: 'i'}})
 -- Uso bacana do $regex com o método .countDocuments()
 db.Moradores.countDocuments({MoradorGenero: {$regex: 'mascULINO', $options: 'i'}})
 
----- FIM DO SEGUNDO EXERCÍCIO ----
