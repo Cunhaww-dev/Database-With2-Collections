@@ -1,0 +1,180 @@
+/*- CRIAR UMA BASE DE DADOS CHAMADA HABITANTES
+- CRIAR UMA COLLECTION CHAMADA MORADORES
+- INSERIR UM CONJUNTO DE DADOS - DOCUMENTOS - NO TOTAL DE 5 COM OS SEGUINTES DADOS:
+	NOME E SOBRENOME, GENERO, ENDEREÇO: RUA/AV, BAIRRO, CIDADE, ESTADO, QTDEFILHOS
+- EXECUTAR - FAZENDO DA FUNÇÃO AGGREGATE() - COM OPERAÇÕES BÁSICAS
+- POSTERIORMENTE, FAZER DO OPERADOR $REGEX PARA CRIAR CONSULTAS A PARTIR DE PADRÕES APLICADOS À EXPRESSÕES REGULARES */
+
+-- Criando a DB
+use DBHabitantes
+
+
+-- Criando a primeira collection
+db.createCollection('Moradores')
+
+
+-- Populando a primeira collection
+let moradoresDocs = [
+    {
+        IdMorador: 1,
+        MoradorNome: 'Lucas',
+        MoradorSobrenome: 'Cunha Fabri',
+        MoradorGenero: 'Masculino',
+        MoradorQtdFilhos: 5
+    },
+    {
+        IdMorador: 2,
+        MoradorNome: 'Luanna',
+        MoradorSobrenome: 'Rolim Silva',
+        MoradorGenero: 'Feminino',
+        MoradorQtdFilhos: 1
+    },
+    {
+        IdMorador: 3,
+        MoradorNome: 'Rita',
+        MoradorSobrenome: 'De Cássia Ribeiro',
+        MoradorGenero: 'Feminino',
+        MoradorQtdFilhos: 4
+    },
+    {
+        IdMorador: 4,
+        MoradorNome: 'Bheatriz',
+        MoradorSobrenome: 'Da Cunha Varalda',
+        MoradorGenero: 'Feminino',
+        MoradorQtdFilhos: 2
+    },
+    {
+        IdMorador: 5,
+        MoradorNome: 'Valter',
+        MoradorSobrenome: 'Adriano Fabri',
+        MoradorGenero: 'Masculino',
+        MoradorQtdFilhos: 4
+    }
+]
+
+
+-- inserindo os Documentos
+db.Moradores.insertMany(MoradoresDocs)
+
+
+-- Find() para verificar exito na inserção dos documentos
+db.Moradores.find()
+
+
+
+-- Criando a segunda collection
+db.createCollection('MoradoresEndereco')
+
+
+-- Populando a segunda collection
+let enderecoMoradores = [
+    {   
+        IdEndereco: 1,
+        IdMorador: 1,
+        MoradorRua: 'Rua das Flores',
+        MoradorCasaNum: 123,
+        MoradorBairro: 'Jardim das Rosas',
+        MoradorCidade: 'São Paulo',
+        MoradorEstado: 'SP'
+    },
+        {   
+        IdEndereco: 2,
+        IdMorador: 2,
+        MoradorRua: 'Avenida Central',
+        MoradorCasaNum: 456,
+        MoradorBairro: 'Centro',
+        MoradorCidade: 'Rio de Janeiro',
+        MoradorEstado: 'RJ'
+    },
+        {   
+        IdEndereco: 3,
+        IdMorador: 3,
+        MoradorRua: 'Rua dos Pinehrios',
+        MoradorCasaNum: 789,
+        MoradorBairro: 'Vila Nova',
+        MoradorCidade: 'Curitiba',
+        MoradorEstado: 'PR'
+    },
+        {   
+        IdEndereco: 4,
+        IdMorador: 4,
+        MoradorRua: 'Rua das Palmeiras',
+        MoradorCasaNum: 101,
+        MoradorBairro: 'Parque Verde',
+        MoradorCidade: 'Salvador',
+        MoradorEstado: 'BA'
+    },
+        {   
+        IdEndereco: 5,
+        IdMorador: 5,
+        MoradorRua: 'Avenida do Sol',
+        MoradorCasaNum: 202,
+        MoradorBairro: 'Jardim América',
+        MoradorCidade: 'Belo Horizonte',
+        MoradorEstado: 'MG'
+    },
+]
+
+
+-- inserindo os Documentos
+db.MoradoresEndereco.insertMany(enderecoMoradores)
+
+
+-- Find() para verificar exito na inserção dos documentos
+db.MoradoresEndereco.find()
+
+
+-- "Agregando" as duas collections para uma visualização completa dos documentos
+db.Moradores.aggregate([
+    {$lookup: 
+        {from: 'MoradoresEndereco',
+        localField: 'IdMorador',
+        foreignField: 'IdMorador',
+        as: 'DetalhesMoradores'}
+    },
+    {
+        $unwind: '$DetalhesMoradores'
+    }
+])
+
+
+-- Operações com o uso do aggregate - toArray()
+let findMoradores = db.Moradores.find({IdMorador: 4}).toArray()
+
+let findEndereco = db.MoradoresEndereco.find({IdMorador: 4}).toArray()
+
+let findJuncao = {
+    Moradores: findMoradores,
+    Endereco: findEndereco
+}
+
+print(findJuncao)
+
+
+-- Operações com o uso do aggregate e outros operadores - $gte $lte
+let findMoradores = db.Moradores.find({$and: [{IdMorador: {$gte: 3}}, {IdMorador: {$lte: 5}}]}).toArray()
+
+let findEndereco = db.MoradoresEndereco.find({$and: [{IdMorador: {$gte: 3}}, {IdMorador: {$lte: 5}}]}).toArray()
+
+let findJuncao = {
+    Moradores: findMoradores,
+    Endereco: findEndereco
+}
+
+print(findJuncao)
+
+
+-- Alterando dados de um documento
+db.MoradoresEndereco.updateOne({IdEndereco: 3}, {$set: {MoradorEstado: 'SP'}})
+
+
+-- Utilizando e $regex para procurar documentos específicos
+db.MoradoresEndereco.find({MoradorEstado: {$regex: 'SP'}})
+
+db.Moradores.find({MoradorGenero: {$regex: 'MASCulino', $options: 'i'}})
+
+
+-- Uso bacana do $regex com o método .countDocuments()
+db.Moradores.countDocuments({MoradorGenero: {$regex: 'mascULINO', $options: 'i'}})
+
+---- FIM DO SEGUNDO EXERCÍCIO ----
